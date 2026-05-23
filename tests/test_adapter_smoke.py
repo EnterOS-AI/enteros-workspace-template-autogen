@@ -20,3 +20,11 @@ def test_adapter_imports() -> None:
 
     assert AutoGenAdapter.name() == "autogen"
     assert AutoGenAdapter.display_name() == "AutoGen"
+
+
+def test_adapter_does_not_import_removed_a2a_utils() -> None:
+    from pathlib import Path
+
+    source = Path(__file__).resolve().parent.parent.joinpath("adapter.py").read_text()
+    assert "from a2a.utils import new_agent_text_message" not in source
+    assert "new_response_message" in source

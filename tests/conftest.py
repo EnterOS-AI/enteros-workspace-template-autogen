@@ -53,12 +53,15 @@ def _install_stubs() -> None:
             return None
 
         mr.adapters.shared_runtime.set_current_task = _noop
+        mr.executor_helpers = types.ModuleType("molecule_runtime.executor_helpers")
+        mr.executor_helpers.new_response_message = lambda _context, text="": text
         sys.modules["molecule_runtime"] = mr
         sys.modules["molecule_runtime.adapters"] = mr.adapters
         sys.modules["molecule_runtime.adapters.base"] = mr.adapters.base
         sys.modules["molecule_runtime.adapters.shared_runtime"] = (
             mr.adapters.shared_runtime
         )
+        sys.modules["molecule_runtime.executor_helpers"] = mr.executor_helpers
     if "a2a" not in sys.modules:
         a2a = types.ModuleType("a2a")
         a2a.server = types.ModuleType("a2a.server")
