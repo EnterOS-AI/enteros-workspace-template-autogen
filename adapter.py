@@ -30,6 +30,22 @@ except ModuleNotFoundError:  # pragma: no cover - older test stubs
 logger = logging.getLogger(__name__)
 
 
+def _image_description_context(text: str) -> str:
+    marker = "Image attachment descriptions:"
+    if marker not in text:
+        return ""
+    return text[text.index(marker):].strip()
+
+
+def _looks_like_tool_execution_summary(text: str) -> bool:
+    return (
+        "exit_code" in text
+        and "stdout" in text
+        and "stderr" in text
+        and "backend" in text
+    )
+
+
 def _langchain_to_autogen(lc_tool):
     """Wrap a LangChain BaseTool as an AutoGen FunctionTool.
 
@@ -119,8 +135,10 @@ class AutoGenA2AExecutor(AgentExecutor):
 
         user_message = extract_message_text(context)
         attached = extract_attached_files(getattr(context, "message", None))
+        image_context = ""
         if attached:
             user_message = await append_image_descriptions(user_message, attached)
+            image_context = _image_description_context(user_message)
 
         if not user_message and not attached:
             await event_queue.enqueue_event(new_response_message(context, "No message provided"))
@@ -139,6 +157,13 @@ class AutoGenA2AExecutor(AgentExecutor):
                 model_name = model_str
 
             task_text = build_task_text(user_message, extract_history(context))
+            if image_context:
+                task_text += (
+                    "\n\nUse the image attachment descriptions above as "
+                    "visual context and answer the user in natural language. "
+                    "Do not return raw tool execution output unless the user "
+                    "explicitly asks for it."
+                )
 
             client_kwargs = {"model": model_name}
             base_url = os.environ.get("OPENAI_BASE_URL")
@@ -174,6 +199,8 @@ class AutoGenA2AExecutor(AgentExecutor):
                         break
             if not reply:
                 reply = str(result)
+            if image_context and _looks_like_tool_execution_summary(reply):
+                reply = image_context
 
         except Exception as e:
             reply = f"AutoGen error: {e}"
