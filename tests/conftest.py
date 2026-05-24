@@ -55,6 +55,13 @@ def _install_stubs() -> None:
         mr.adapters.shared_runtime.set_current_task = _noop
         mr.executor_helpers = types.ModuleType("molecule_runtime.executor_helpers")
         mr.executor_helpers.new_response_message = lambda _context, text="": text
+        mr.executor_helpers.extract_attached_files = lambda *_a, **_k: []
+        mr.attachment_vision = types.ModuleType("molecule_runtime.attachment_vision")
+
+        async def _append_image_descriptions(text, _files):
+            return text
+
+        mr.attachment_vision.append_image_descriptions = _append_image_descriptions
         sys.modules["molecule_runtime"] = mr
         sys.modules["molecule_runtime.adapters"] = mr.adapters
         sys.modules["molecule_runtime.adapters.base"] = mr.adapters.base
@@ -62,6 +69,7 @@ def _install_stubs() -> None:
             mr.adapters.shared_runtime
         )
         sys.modules["molecule_runtime.executor_helpers"] = mr.executor_helpers
+        sys.modules["molecule_runtime.attachment_vision"] = mr.attachment_vision
     if "a2a" not in sys.modules:
         a2a = types.ModuleType("a2a")
         a2a.server = types.ModuleType("a2a.server")

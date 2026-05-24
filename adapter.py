@@ -8,6 +8,7 @@ Requires: pip install autogen-agentchat autogen-ext[openai]
 
 import json
 import logging
+import os
 
 from molecule_runtime.adapters.base import BaseAdapter, AdapterConfig
 from molecule_runtime.adapters.shared_runtime import (
@@ -17,7 +18,14 @@ from molecule_runtime.adapters.shared_runtime import (
     extract_message_text,
     set_current_task,
 )
+from molecule_runtime.executor_helpers import extract_attached_files
 from a2a.server.agent_execution import AgentExecutor
+
+try:
+    from molecule_runtime.attachment_vision import append_image_descriptions
+except ModuleNotFoundError:  # pragma: no cover - older test stubs
+    async def append_image_descriptions(text, files):
+        return text
 
 logger = logging.getLogger(__name__)
 
@@ -110,8 +118,11 @@ class AutoGenA2AExecutor(AgentExecutor):
         from molecule_runtime.executor_helpers import new_response_message
 
         user_message = extract_message_text(context)
+        attached = extract_attached_files(getattr(context, "message", None))
+        if attached:
+            user_message = await append_image_descriptions(user_message, attached)
 
-        if not user_message:
+        if not user_message and not attached:
             await event_queue.enqueue_event(new_response_message(context, "No message provided"))
             return
 
@@ -129,7 +140,23 @@ class AutoGenA2AExecutor(AgentExecutor):
 
             task_text = build_task_text(user_message, extract_history(context))
 
-            client = OpenAIChatCompletionClient(model=model_name)
+            client_kwargs = {"model": model_name}
+            base_url = os.environ.get("OPENAI_BASE_URL")
+            api_key = os.environ.get("OPENAI_API_KEY")
+            if base_url:
+                client_kwargs["base_url"] = base_url
+            if api_key:
+                client_kwargs["api_key"] = api_key
+            if base_url or model_name.lower().startswith("minimax"):
+                client_kwargs["model_info"] = {
+                    "vision": False,
+                    "function_calling": True,
+                    "json_output": False,
+                    "structured_output": False,
+                    "family": "unknown",
+                }
+
+            client = OpenAIChatCompletionClient(**client_kwargs)
             agent = AssistantAgent(
                 name="agent",
                 model_client=client,
