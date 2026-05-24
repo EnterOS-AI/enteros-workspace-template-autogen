@@ -28,3 +28,30 @@ def test_adapter_does_not_import_removed_a2a_utils() -> None:
     source = Path(__file__).resolve().parent.parent.joinpath("adapter.py").read_text()
     assert "from a2a.utils import new_agent_text_message" not in source
     assert "new_response_message" in source
+
+
+def test_image_description_context_extracts_marker_section() -> None:
+    from adapter import _image_description_context
+
+    text = (
+        "Describe this.\n\n"
+        "Image attachment descriptions:\n"
+        "- probe.png: A red square and a blue circle sit above a black line."
+    )
+
+    assert _image_description_context(text) == (
+        "Image attachment descriptions:\n"
+        "- probe.png: A red square and a blue circle sit above a black line."
+    )
+
+
+def test_tool_execution_summary_detection() -> None:
+    from adapter import _looks_like_tool_execution_summary
+
+    assert _looks_like_tool_execution_summary(
+        "{'exit_code': 0, 'stdout': 'Size: (320, 220)', "
+        "'stderr': '', 'language': 'python', 'backend': 'subprocess'}"
+    )
+    assert not _looks_like_tool_execution_summary(
+        "A red square and a blue circle sit above a black line."
+    )
