@@ -16,9 +16,16 @@ from molecule_runtime.adapters.shared_runtime import (
     brief_task,
     extract_history,
     extract_message_text,
-    set_current_task,
 )
-from molecule_runtime.executor_helpers import extract_attached_files
+# SSOT (runtime #2914): import `set_current_task` from its canonical home in
+# `executor_helpers`, not via `shared_runtime`. Historically `shared_runtime`
+# carried a SECOND, divergent copy that pushed the heartbeat UNAUTHENTICATED,
+# and this adapter silently used it. The canonical implementation routes
+# through the shared authenticated HTTP client. `shared_runtime` now merely
+# re-exports this same function, so behaviour is identical today — importing
+# from the source module makes the auth intent explicit and prevents a future
+# re-introduction of a local un-auth'd copy from silently regressing autogen.
+from molecule_runtime.executor_helpers import extract_attached_files, set_current_task
 from a2a.server.agent_execution import AgentExecutor
 
 try:

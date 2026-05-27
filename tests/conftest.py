@@ -56,6 +56,9 @@ def _install_stubs() -> None:
         mr.executor_helpers = types.ModuleType("molecule_runtime.executor_helpers")
         mr.executor_helpers.new_response_message = lambda _context, text="": text
         mr.executor_helpers.extract_attached_files = lambda *_a, **_k: []
+        # runtime #2914: adapter.py now imports the canonical (authenticated)
+        # `set_current_task` directly from executor_helpers — stub it here too.
+        mr.executor_helpers.set_current_task = _noop
         mr.attachment_vision = types.ModuleType("molecule_runtime.attachment_vision")
 
         async def _append_image_descriptions(text, _files):
