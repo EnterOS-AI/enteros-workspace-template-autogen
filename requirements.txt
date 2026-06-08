@@ -1,5 +1,5 @@
 # Molecule AI workspace runtime — shared infrastructure
-molecule-ai-workspace-runtime>=0.2.1
+molecule-ai-workspace-runtime>=0.3.10
 
 # Starlette Request.form() needs python-multipart for /internal/chat/uploads/ingest.
 python-multipart>=0.0.27
