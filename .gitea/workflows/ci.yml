@@ -218,3 +218,30 @@ jobs:
       # which would otherwise fail the job.
       - if: hashFiles('tests/**/test_*.py') != ''
         run: python3 -m pytest tests/ -v
+
+  all-required:
+    # Aggregator sentinel — RFC internal#219 §2 (Phase 2a).
+    # Single stable required-status name that branch protection can point
+    # at; CI churns underneath in `needs:` without any protection edits.
+    # Issue #6.
+    name: all-required
+    runs-on: ubuntu-latest
+    needs: [validate, tests]
+    if: always()
+    timeout-minutes: 1
+    steps:
+      - name: Verify all required jobs passed
+        run: |
+          validate="${{ needs.validate.result }}"
+          tests="${{ needs.tests.result }}"
+          echo "validate: $validate"
+          echo "tests:    $tests"
+          if [ "$validate" != "success" ]; then
+            echo "::error::validate did not succeed: $validate"
+            exit 1
+          fi
+          if [ "$tests" != "success" ] && [ "$tests" != "skipped" ]; then
+            echo "::error::tests did not succeed: $tests"
+            exit 1
+          fi
+          echo "::notice::All required jobs passed (validate=$validate, tests=$tests)"
