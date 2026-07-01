@@ -19,7 +19,7 @@ ARG PIP_EXTRA_INDEX_URL=https://pypi.org/simple/
 COPY requirements.txt .
 RUN pip install --no-cache-dir --index-url "${PIP_INDEX_URL}" --extra-index-url "${PIP_EXTRA_INDEX_URL}" -r requirements.txt && \
     if [ -n "${RUNTIME_VERSION}" ]; then \
-      pip install --no-cache-dir --index-url "${PIP_INDEX_URL}" --extra-index-url "${PIP_EXTRA_INDEX_URL}" --upgrade "molecule-ai-workspace-runtime==${RUNTIME_VERSION}"; \
+      pip install --no-cache-dir --index-url "${PIP_INDEX_URL}" --extra-index-url "${PIP_EXTRA_INDEX_URL}" --upgrade "molecules-workspace-runtime==${RUNTIME_VERSION}"; \
     fi
 
 COPY adapter.py .
